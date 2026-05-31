@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen">
+<title>Sky Rascal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Boogaloo&family=Rancho&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body {
+    width:100%; height:100%;
+    min-height: -webkit-fill-available;
+    background:#1a0a00;
+    overflow:hidden;
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  #wrapper {
+    position:fixed; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    background:#1a0a00;
+  }
+  #canvasWrap { position:relative; line-height:0; }
+  canvas { display:block; }
+  #touchControls {
+    display:none;
+    position:absolute; inset:0;
+    pointer-events:none;
+  }
+  #joystickZone {
+    position:absolute; bottom:12px; left:12px;
+    width:120px; height:120px;
+    pointer-events:all;
+  }
+  #joystickBase {
+    position:absolute; inset:0;
+    border-radius:50%;
+    background:rgba(255,255,255,0.06);
+    border:2px solid rgba(255,255,255,0.2);
+  }
+  #joystickThumb {
+    position:absolute;
+    width:48px; height:48px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.18);
+    border:2px solid rgba(255,255,255,0.35);
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+  }
+  #shootBtn {
+    position:absolute; bottom:20px; right:20px;
+    width:80px; height:80px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.08);
+    border:2px solid rgba(255,255,255,0.25);
+    font-family:'Rancho',cursive;
+    font-size:1rem; color:rgba(255,255,255,0.5);
+    display:flex; align-items:center; justify-content:center;
+    pointer-events:all;
+  }
+  #shootBtn:active { background:rgba(255,255,255,0.2); }
+  #pauseBtn {
+    position:absolute; bottom:28px; left:50%; transform:translateX(-50%);
+    width:40px; height:40px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.06);
+    border:2px solid rgba(255,255,255,0.2);
+    display:flex; align-items:center; justify-content:center;
+    pointer-events:all;
+  }
+  #pauseBtn:active { background:rgba(255,255,255,0.15); }
+  #pauseIcon { display:flex; gap:5px; align-items:center; }
+  #pauseIcon span { display:block; width:4px; height:16px; background:rgba(255,255,255,0.5); border-radius:2px; }
+</style>
+</head>
+<body>
+<div id="wrapper">
+  <div id="canvasWrap">
+    <canvas id="gameCanvas"></canvas>
+    <div id="touchControls">
+      <div id="joystickZone">
+        <div id="joystickBase"></div>
+        <div id="joystickThumb"></div>
+      </div>
+      <div id="shootBtn">FIRE</div>
+      <div id="pauseBtn"><div id="pauseIcon"><span></span><span></span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Load order matters: constants first, then systems, then main last -->
+<script src="constants.js"></script>
+<script src="globals.js"></script>
+<script src="audio.js"></script>
+<script src="render.js"></script>
+<script src="render-ground.js"></script>
+<script src="stubs.js"></script>
+<script src="ground.js"></script>
+<script src="ed-boss.js"></script>
+<script src="player.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
