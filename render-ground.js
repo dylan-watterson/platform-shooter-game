@@ -172,7 +172,7 @@ function drawED209Ground(x, y, squash, standAmt, hitFlash=0) {
 
   // Back leg
   ctx.save(); ctx.globalAlpha=0.7;
-  drawLegGround(20, standAmt, squash);
+  drawLegGround(20, standAmt, squash, hitFlash);
   ctx.restore();
 
   // Torso
@@ -227,18 +227,20 @@ function drawED209Ground(x, y, squash, standAmt, hitFlash=0) {
   ctx.beginPath(); ctx.moveTo(44,0); ctx.lineTo(22,0); ctx.lineTo(26,-36); ctx.lineTo(50,-36); ctx.closePath(); ctx.fill();
   ctx.strokeStyle="#444"; ctx.lineWidth=1; ctx.stroke();
   // Head
-  drawED209Head(standAmt);
+  drawED209Head(standAmt, hitFlash);
   ctx.restore();
 
   // Front leg (drawn after torso)
-  drawLegGround(-16, standAmt, squash);
+  drawLegGround(-16, standAmt, squash, hitFlash);
 
-  // Hit flash — torso only, lighter blend so it stays within body pixels
-  if(hitFlash > 0) {
+  // Hit flash (white) or death flash (red) — torso shape
+  const torsoFlashAlpha = hitFlash > 0 ? 0.5*(hitFlash/12) : gnd.edDeathFlash ? 0.6 : 0;
+  const torsoFlashColor = hitFlash > 0 ? "#ffffff" : "#cc1111";
+  if(torsoFlashAlpha > 0) {
     ctx.save();
-    ctx.globalAlpha = 0.5 * (hitFlash / 12);
+    ctx.globalAlpha = torsoFlashAlpha;
     ctx.globalCompositeOperation = "lighter";
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = torsoFlashColor;
     const tl = standAmt * 48;
     ctx.beginPath();
     ctx.moveTo(-32,-tl); ctx.lineTo(44,-tl); ctx.lineTo(50,-38-tl);
@@ -252,7 +254,7 @@ function drawED209Ground(x, y, squash, standAmt, hitFlash=0) {
 
 
 
-function drawLegGround(offsetX, standAmt, squash) {
+function drawLegGround(offsetX, standAmt, squash, hitFlash=0) {
   ctx.save();
   ctx.translate(offsetX, 0);
   const torsoLift = standAmt * 48;
@@ -304,10 +306,38 @@ function drawLegGround(offsetX, standAmt, squash) {
   ctx.lineTo(ax-38-fSplay,ay+15); ctx.lineTo(ax-42-fSplay,ay+7);
   ctx.lineTo(ax-38-fSplay,ay+2); ctx.closePath(); ctx.fill();
   ctx.strokeStyle="#444"; ctx.lineWidth=1.5; ctx.stroke();
+  // Hit flash (white) or death flash (red)
+  const legFlashAlpha = hitFlash > 0 ? 0.5*(hitFlash/12) : gnd.edDeathFlash ? 0.6 : 0;
+  const legFlashColor = hitFlash > 0 ? "#ffffff" : "#cc1111";
+  if(legFlashAlpha > 0) {
+    ctx.save();
+    ctx.globalAlpha = legFlashAlpha;
+    ctx.globalCompositeOperation = "lighter";
+    ctx.fillStyle = legFlashColor;
+    ctx.beginPath();
+    ctx.moveTo(0+tpx*thighW*0.55, hipY+tpy*thighW*0.55);
+    ctx.lineTo(0-tpx*thighW*0.45, hipY-tpy*thighW*0.45);
+    ctx.lineTo(kx-tpx*thighW*0.4, ky-tpy*thighW*0.4);
+    ctx.lineTo(kx+tpx*thighW*0.6, ky+tpy*thighW*0.6);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(kx,ky,13,0,Math.PI*2); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(kx+spx*shinW*0.55, ky+spy*shinW*0.55);
+    ctx.lineTo(kx-spx*shinW*0.45, ky-spy*shinW*0.45);
+    ctx.lineTo(ax-spx*shinW*0.35, ay-spy*shinW*0.35);
+    ctx.lineTo(ax+spx*shinW*0.65, ay+spy*shinW*0.65);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(ax,ay,8,0,Math.PI*2); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(ax+16,ay+2); ctx.lineTo(ax+16,ay+15);
+    ctx.lineTo(ax-38-fSplay,ay+15); ctx.lineTo(ax-42-fSplay,ay+7);
+    ctx.lineTo(ax-38-fSplay,ay+2); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
   ctx.restore();
 }
 
-function drawED209Head(standAmt) {
+function drawED209Head(standAmt, hitFlash=0) {
   ctx.save();
   ctx.translate(-6,-136);
   ctx.rotate(0.14 - standAmt*0.08);
@@ -353,6 +383,30 @@ function drawED209Head(standAmt) {
   ctx.strokeStyle="rgba(80,80,80,0.7)"; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(eyeL,eyeY); ctx.lineTo(eyeR,eyeY); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(eyeL,eyeY+eyeH); ctx.lineTo(eyeR,eyeY+eyeH); ctx.stroke();
+  // Hit flash (white) or death flash (red)
+  const headFlashAlpha = hitFlash > 0 ? 0.5*(hitFlash/12) : gnd.edDeathFlash ? 0.6 : 0;
+  const headFlashColor = hitFlash > 0 ? "#ffffff" : "#cc1111";
+  if(headFlashAlpha > 0) {
+    ctx.save();
+    ctx.globalAlpha = headFlashAlpha;
+    ctx.globalCompositeOperation = "lighter";
+    ctx.fillStyle = headFlashColor;
+    ctx.fillRect(-10,hH-4,26,16);
+    ctx.beginPath();
+    ctx.moveTo(-hW*0.38,6); ctx.lineTo(-hW*0.38,hH*0.2);
+    ctx.lineTo(hW*0.62,hH); ctx.lineTo(hW*0.62,0);
+    ctx.lineTo(hW*0.1,-8); ctx.lineTo(-hW*0.28,-2);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-hW*0.2,-2); ctx.lineTo(hW*0.55,-2);
+    ctx.lineTo(hW*0.62,0); ctx.lineTo(hW*0.1,-8); ctx.lineTo(-hW*0.28,-2);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(hW*0.45,0); ctx.lineTo(hW*0.62,0);
+    ctx.lineTo(hW*0.62,-18); ctx.lineTo(hW*0.50,-22);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
   ctx.restore();
 }
 
@@ -804,7 +858,7 @@ function drawGroundScene() {
   // Wheels
   const wheelY=JEEP_H-8;
   [20,JEEP_W-20].forEach(wx=>{
-    const spin=(gnd.scrollX/15)%(Math.PI*2);
+    const spin=(gnd.speed > 0.1 ? gnd.scrollX/15 : frameCount*0.2)%(Math.PI*2);
     ctx.fillStyle=hit?"#ff4444":"#222"; ctx.beginPath(); ctx.arc(wx,wheelY,12,0,Math.PI*2); ctx.fill();
     ctx.strokeStyle="#555"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(wx,wheelY,12,0,Math.PI*2); ctx.stroke();
     // Spokes

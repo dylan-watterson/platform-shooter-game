@@ -72,8 +72,9 @@ function updateGroundEscape() {
 
   const progress = gnd.distance/gnd.totalDist;
 
-  // Input locked during opening title
-  if(gnd.phase!=="escape" || gnd.timer > 270) {
+  // Input locked during opening title and ED death/victory sequence
+  const edDeathActive = gnd.edSubPhase==="dying" || gnd.edSubPhase==="ed_exploding" || gnd.edSubPhase==="ed_victory";
+  if((gnd.phase!=="escape" || gnd.timer > 270) && !edDeathActive) {
   const moveLeft  = keys["ArrowLeft"] ||keys["a"]||keys["A"]||(joy.dx<-0.2);
   const moveRight = keys["ArrowRight"]||keys["d"]||keys["D"]||(joy.dx>0.2);
   const moveUp    = keys["ArrowUp"]   ||keys["w"]||keys["W"]||(joy.dy<-0.2);
@@ -273,13 +274,15 @@ function updateGroundEscape() {
   // Rear wheel dust — only when moving
   gnd.bumpY = gnd.bumpY || 0;
   gnd.bumpY *= 0.6;
-  if(frameCount%2===0 && (gnd.speed > 0.5 || gnd.phase==="tunnel_enter")) {
+  const inEDFight = gnd.phase==="ed_drop" && (gnd.edSubPhase==="done" || gnd.edSuperBlastActive);
+  if(frameCount%2===0 && (gnd.speed > 0.5 || gnd.phase==="tunnel_enter" || inEDFight)) {
     const wheelBaseX = gnd.jeepX + 20;
     const wheelBaseY = gnd.jeepY - JEEP_H + (gnd.bumpY||0) + JEEP_H + 4;
+    const smokeSpeed = inEDFight ? 0.5 : gnd.speed*0.25;
     particles.push({
       x: wheelBaseX+(Math.random()-0.5)*6,
       y: wheelBaseY+(Math.random()-0.5)*3,
-      vx: -(1.5+Math.random()*2.0)*(gnd.speed*0.25),
+      vx: -(1.5+Math.random()*2.0)*smokeSpeed,
       vy: -(0.12+Math.random()*0.18),
       life:0.85, decay:0.007,
       r: 12+Math.random()*16,
@@ -353,6 +356,8 @@ function updateGroundEscape() {
     gnd.edHp = 25;
     gnd.edMaxHp = 25;
     gnd.edHitFlash = 0;
+    gnd.edDeathFlash = false;
+    gnd.edVictory = false;
     gnd.edFacing = 1;
     gnd.edLane = 1;
     gnd.edSliding = false;
@@ -621,24 +626,85 @@ function updateGroundEscape() {
     } else if(gnd.edSubPhase==="dying") {
       gnd.edDyingTimer++;
       const dt = gnd.edDyingTimer;
-      // Explosion bursts every 18 frames for 90 frames
-      if(dt % 18 === 0 && dt <= 90) {
-        explode(
-          gnd.edX + (Math.random()-0.5)*100,
-          gnd.edTargetY - 30 - Math.random()*130,
-          "#ff4400","#ffdd00", 20
-        );
+      // Slow-to-fast red flash: interval shrinks from 28 → 14 → 5
+      const flashInterval = dt < 70 ? Math.max(14, 28 - Math.floor(dt*0.2))
+                                     : Math.max(5,  14 - Math.floor((dt-70)*0.14));
+      gnd.edDeathFlash = Math.floor(dt / flashInterval) % 2 === 1;
+      // ED slumps while flashing
+      if(dt < 80) gnd.edStandAmt = Math.max(0, gnd.edStandAmt - 0.012);
+      // Small damage sparks during flash sequence
+      if(dt % 22 === 0 && dt < 150) {
+        explode(gnd.edX + (Math.random()-0.5)*70, gnd.edTargetY - 30 - Math.random()*110, "#ff4400","#ffaa00", 12);
+        gnd.shake = 5;
+        if(sfxEnabled) playTone(60+Math.random()*40,"sawtooth",0.25,0.35,90);
+      }
+      // Big finale at dt=150
+      if(dt === 150) {
+        gnd.edDeathFlash = false;
+        // Central blasts
+        explode(gnd.edX, gnd.edTargetY - 80, "#ffffff","#ffaa00", 60);
+        explode(gnd.edX, gnd.edTargetY - 60, "#ff4400","#ffdd00", 40);
+        // Scattered wing blasts
+        for(let i = 0; i < 4; i++) {
+          explode(gnd.edX+(Math.random()-0.5)*140, gnd.edTargetY-30-Math.random()*150, "#ff4400","#ffdd00", 28);
+        }
+        // Metallic debris chunks
+        for(let i = 0; i < 28; i++) {
+          const a = (Math.random()-0.5)*Math.PI*2;
+          const sp = 4 + Math.random()*10;
+          particles.push({
+            x: gnd.edX+(Math.random()-0.5)*80, y: gnd.edTargetY-50-Math.random()*120,
+            vx: Math.cos(a)*sp, vy: Math.sin(a)*sp - 4,
+            life:1, decay:0.003+Math.random()*0.005,
+            r: 8+Math.random()*20,
+            color:["#444","#555","#333","#666","#888","#ff6600"][Math.floor(Math.random()*6)],
+            type: Math.random()>0.4?"star":"circle"
+          });
+        }
+        gnd.shake = 26;
+        gnd.edDyingTimer = 0;
+        gnd.edSubPhase = "ed_exploding";
+        if(sfxEnabled) {
+          playTone(40,"sawtooth",0.9,1.2,500);
+          setTimeout(()=>playTone(70,"sawtooth",0.6,0.9,350),100);
+          setTimeout(()=>playTone(100,"square",0.4,0.6,200),250);
+        }
+      }
+
+    } else if(gnd.edSubPhase==="ed_exploding") {
+      gnd.edDyingTimer++;
+      const dt = gnd.edDyingTimer;
+      // Lingering secondary explosions
+      if(dt % 16 === 0 && dt <= 64) {
+        explode(gnd.edX+(Math.random()-0.5)*100, gnd.edTargetY-40-Math.random()*120, "#ff6600","#ffdd00", 22);
         gnd.shake = 8;
-        if(sfxEnabled) playTone(60+Math.random()*80,"sawtooth",0.4,0.6,100);
+        if(sfxEnabled) playTone(50+Math.random()*50,"sawtooth",0.4,0.6,150);
       }
-      // ED slumps — crouch down during death
-      if(dt < 60) gnd.edStandAmt = Math.max(0, gnd.edStandAmt - 0.015);
-      // After 100 frames — transition (TODO: next stage)
       if(dt >= 100) {
-        gnd.edSubPhase = "dead";
+        gnd.edDyingTimer = 0;
+        gnd.edSubPhase = "ed_victory";
       }
+
+    } else if(gnd.edSubPhase==="ed_victory") {
+      gnd.edDyingTimer++;
+      const dt = gnd.edDyingTimer;
+      // 40-frame engine rumble, then accelerate right
+      if(dt <= 40) {
+        if(dt % 10 === 0) gnd.shake = 3;
+      } else {
+        gnd.speed = Math.min(14, (dt-40) * 0.28);
+        gnd.scrollX += gnd.speed;
+        gnd.jeepX   += gnd.speed;
+      }
+      if(gnd.jeepX > GAME_W + 20) {
+        gnd.phase = "fade";
+        gnd.tunnelTimer = 0;
+        gnd.edVictory = true;
+        gnd.speed = 0;
+      }
+
     } else if(gnd.edSubPhase==="dead") {
-      // Sit dead — TODO transition to next stage
+      // fallback dead state
     } // end edSubPhase blocks
 
     // ── Update energy balls ──
@@ -874,6 +940,8 @@ function updateGroundEscape() {
             r: 40,
             vx: -0.75, // Speed Of The Super Ball
             alpha: 1,
+            hp: 30,
+            hitFlash: 0,
           };
           gnd.edSuperBlastPhase = "fired";
           gnd.edSuperBlastTimer = 0;
@@ -911,12 +979,39 @@ function updateGroundEscape() {
           if(lives <= 0) { state = "gameover"; }
         }
       }
+      // Tick hit flash
+      if(sb.hitFlash > 0) sb.hitFlash--;
+      // Player bullets hit the ball core (sb.r, not glow)
+      for(let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        if(b.enemy) continue;
+        const dx = b.x - sb.x, dy = b.y - sb.y;
+        if(dx*dx + dy*dy < sb.r*sb.r) {
+          bullets.splice(i, 1);
+          sb.hp--;
+          sb.hitFlash = 8;
+          if(sb.hp <= 0) {
+            // Big blue-white explosion
+            explode(sb.x, sb.y, "#88ccff", "#ffffff", 40);
+            explode(sb.x, sb.y, "#4488ff", "#cceeff", 30);
+            gnd.shake = 12;
+            if(sfxEnabled) {
+              playTone(120,"sawtooth",0.5,0.6,200);
+              setTimeout(()=>playTone(80,"sawtooth",0.4,0.5,300),80);
+              setTimeout(()=>playTone(200,"square",0.3,0.4,150),160);
+            }
+            gnd.edSuperBall = null;
+            break;
+          }
+        }
+      }
       // Off screen — remove
-      if(sb.x + sb.r < 0) gnd.edSuperBall = null;
+      if(gnd.edSuperBall && sb.x + sb.r < 0) gnd.edSuperBall = null;
     }
 
     // Set hook so rockets + smoke behind jeep draw inside drawGroundScene before jeep
     const edBehindJeep = gnd.edTargetY < gnd.jeepY;
+    const edVisible = gnd.edSubPhase !== "ed_exploding" && gnd.edSubPhase !== "ed_victory";
     gnd.rocketDrawHook = () => {
       // Lob rockets behind jeep
       gnd.edBalls.filter(b => !b.landed && b.landY < gnd.jeepY).forEach(b => drawEdEnergyBall(b));
@@ -925,7 +1020,7 @@ function updateGroundEscape() {
       // Smoke behind jeep
       particles.filter(p => p.rocketTargetY !== undefined && p.rocketTargetY < gnd.jeepY).forEach(drawParticle);
       // ED behind jeep when he's above jeep Y
-      if(edBehindJeep) {
+      if(edBehindJeep && edVisible) {
         drawED209Ground(gnd.edX, gnd.edY, gnd.edSquash, gnd.edStandAmt, gnd.edHitFlash||0);
         if(gnd.edSuperBlastActive && gnd.edSuperBlastPhase === "charge") {
           drawEDCannonCharge(gnd.edX, gnd.edTargetY, gnd.edFacing, gnd.edStandAmt, gnd.edSuperBlastTimer);
@@ -943,8 +1038,9 @@ function updateGroundEscape() {
     particles.filter(p => p.rocketTargetY !== undefined && p.rocketTargetY >= gnd.jeepY).forEach(drawParticle);
     // Player bullets
     bullets.filter(b => !b.enemy).forEach(b => drawBullet(b));
-    // Draw super ball (behind ED but in front of jeep)
-    if(gnd.edSuperBall) {
+    // Super ball draw — extracted for depth sorting with ED
+    const drawSuperBall = () => {
+      if(!gnd.edSuperBall) return;
       const sb = gnd.edSuperBall;
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
@@ -988,16 +1084,28 @@ function updateGroundEscape() {
         ctx.stroke();
         ctx.shadowBlur = 0;
       }
+      // Hit flash — red tint over the core
+      if(sb.hitFlash > 0) {
+        ctx.save();
+        ctx.globalAlpha = sb.hitFlash / 8 * 0.6;
+        ctx.fillStyle = "#ff4444";
+        ctx.beginPath(); ctx.arc(sb.x, sb.y, sb.r, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
       ctx.restore();
-    }
+    };
+    // ED above ball (higher on screen) → ball drawn in front of ED; otherwise ball behind ED
+    const edAboveBall = gnd.edSuperBall && !edBehindJeep && edVisible && gnd.edTargetY < L3_Y;
+    if(!edAboveBall) drawSuperBall();
     // Draw ED-209 (only if in front of jeep — behind case handled in rocketDrawHook)
-    if(!edBehindJeep) {
+    if(!edBehindJeep && edVisible) {
       drawED209Ground(gnd.edX, gnd.edY, gnd.edSquash, gnd.edStandAmt, gnd.edHitFlash||0);
     }
     // Cannon charge overlay during super blast charge phase
-    if(!edBehindJeep && gnd.edSuperBlastActive && gnd.edSuperBlastPhase === "charge") {
+    if(!edBehindJeep && edVisible && gnd.edSuperBlastActive && gnd.edSuperBlastPhase === "charge") {
       drawEDCannonCharge(gnd.edX, gnd.edTargetY, gnd.edFacing, gnd.edStandAmt, gnd.edSuperBlastTimer);
     }
+    if(edAboveBall) drawSuperBall();
     // HP bar above ED
     if(gnd.edSubPhase !== "falling" && gnd.edHp > 0) {
       const barW = 120, barH = 10;
@@ -1095,7 +1203,10 @@ function updateGroundEscape() {
   if(gnd.phase==="fade") {
     gnd.tunnelTimer++;
     if(gnd.tunnelTimer>=40) {
-      if(state==="ground") {
+      if(state==="ground" && gnd.edVictory) {
+        // TODO: ED defeated — hook up to next level/victory screen
+        state = "mainmenu";
+      } else if(state==="ground") {
         startGroundEscape2();
       } else {
         player.x=80; player.y=200;
