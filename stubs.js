@@ -49,10 +49,9 @@ function updateLaserCannon() {
     // Laser fully active — check player hit
     if (player.invincible <= 0) {
       if (Math.abs(player.y + player.h/2 - cannon.laserY) < 14 && player.x < GAME_W - 55) {
-        lives--; updateHUD(); player.invincible=90;
+        playerHit(); updateHUD(); player.invincible=90;
         explode(player.x+player.w/2,player.y+player.h/2,"#ff4040","#ff0000",20);
         sfxPlayerHit();
-        if (lives<=0) { state="gameover"; return; }
       }
     }
     if (cannon.stateTimer <= 0) {
@@ -706,10 +705,9 @@ function updateShipBoss() {
     if (player.invincible <= 0) {
       for (const b of enemyBullets) {
         if (rectsOverlap(b.x-8,b.y-4,16,8, player.x+8,player.y+4,player.w-16,player.h-8)) {
-          lives--; updateHUD(); player.invincible=90;
+          playerHit(); updateHUD(); player.invincible=90;
           explode(player.x+player.w/2,player.y+player.h/2,"#f5c842","#ff4040",20);
           sfxPlayerHit();
-          if (lives<=0) { state="gameover"; return; }
           break;
         }
       }
@@ -1309,13 +1307,12 @@ function updateTunnel() {
 }
 
 function loseLifeTunnel() {
-  lives--;
+  playerHit();
   updateHUD();
   tunnel.playerHitTimer = 60;
   player.x = 80;
   explode(player.x+player.w/2, player.y+player.h/2, "#f5c842","#ff4040", 20);
   sfxPlayerHit();
-  if (lives <= 0) { state="gameover"; }
 }
 
 function drawExitWall(ew) {
@@ -1582,9 +1579,8 @@ function updateWave5Intro() {
       if (player.invincible <= 0) {
         const px=player.x+player.w/2, py=player.y+player.h/2;
         if (Math.abs(px-mecha.podX)<38 && Math.abs(py-mecha.podY)<32) {
-          lives--; updateHUD(); player.invincible=90;
+          playerHit(); updateHUD(); player.invincible=90;
           explode(px,py,"#f5c842","#ff4040",20); sfxPlayerHit();
-          if(lives<=0){state="gameover";}
           mecha.podX = -200; // remove pod
         }
       }
@@ -1992,16 +1988,15 @@ function updateMecha() {
   if (player.invincible <= 0) {
     const px=player.x+player.w/2, py=player.y+player.h/2;
     if (px>mb.x+30 && px<mb.x+150 && py>mb.y+40 && py<mb.y+180) {
-      lives--; updateHUD(); player.invincible=90;
+      playerHit(); updateHUD(); player.invincible=90;
       explode(px,py,"#f5c842","#ff4040",20); sfxPlayerHit();
-      if(lives<=0){state="gameover";}
     }
     // Enemy bullets
     for (const b of enemyBullets) {
       if (rectsOverlap(b.x-8,b.y-4,16,8,player.x+8,player.y+4,player.w-16,player.h-8)) {
-        lives--; updateHUD(); player.invincible=90;
+        playerHit(); updateHUD(); player.invincible=90;
         explode(player.x+player.w/2,player.y+player.h/2,"#f5c842","#ff4040",20); sfxPlayerHit();
-        if(lives<=0){state="gameover";} break;
+        break;
       }
     }
   }
@@ -2403,10 +2398,9 @@ function updateAbsorbers() {
       const dx = b.x - (player.x+player.w/2);
       const dy = b.y - (player.y+player.h/2);
       if (Math.sqrt(dx*dx+dy*dy) < b.r + 14) {
-        lives--; updateHUD(); player.invincible=90;
+        playerHit(); updateHUD(); player.invincible=90;
         explode(b.x, b.y, "#00ffff","#ffffff", 14);
         if(sfxEnabled) playTone(300,"sine",0.3,0.3,150);
-        if (lives<=0) { state="gameover"; }
         return false;
       }
     }

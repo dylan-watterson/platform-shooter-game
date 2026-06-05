@@ -310,15 +310,13 @@ function updateGroundEscape() {
         const directHit = !o.gauntlet || (Math.abs(debrisCX - jeepCX) < JEEP_W*0.8 && Math.abs(debrisCY - jeepCY) < JEEP_H*1.2);
         if(hitsX && hitsYd && directHit){
           if(o.big){
-            lives--; updateHUD(); gnd.shake=10; gnd.hitTimer=60;
+            playerHit(); updateHUD(); gnd.shake=10; gnd.hitTimer=60;
             if(sfxEnabled) playTone(150,"sawtooth",0.3,0.4,60);
-            if(lives<=0){ state="gameover"; return; }
             break;
           } else if(o.gauntlet) {
-            lives--; updateHUD(); gnd.shake=8; gnd.hitTimer=60;
+            playerHit(); updateHUD(); gnd.shake=8; gnd.hitTimer=60;
             o.exploding=true; o.explodeTimer=0;
             if(sfxEnabled) playTone(150,"sawtooth",0.3,0.4,60);
-            if(lives<=0){ state="gameover"; return; }
             break;
           } else {
             gnd.bumpY = -4; // normal small: just bump
@@ -331,10 +329,9 @@ function updateGroundEscape() {
         const jMidC = jeepWorldY + JEEP_H * 0.4;
         const hitsYc = jBotC > o.y && jMidC < o.y + o.h;
         if(hitsXfront && hitsYc) {
-          lives--; updateHUD(); gnd.shake=10; gnd.hitTimer=60;
+          playerHit(); updateHUD(); gnd.shake=10; gnd.hitTimer=60;
           gnd.bumpY = -12;
           if(sfxEnabled) playTone(150,"sawtooth",0.3,0.4,60);
-          if(lives<=0){ state="gameover"; return; }
         }
       }
     }
@@ -472,10 +469,9 @@ function updateGroundEscape() {
           if(gnd.hitTimer<=0){
             if(Math.abs(gnd.edX-(gnd.jeepX+JEEP_W/2))<80 &&
                Math.abs(gnd.edTargetY-gnd.jeepY)<20){
-              lives--; updateHUD(); gnd.hitTimer=90; gnd.shake=10;
+              playerHit(); updateHUD(); gnd.hitTimer=90; gnd.shake=10;
               explode(gnd.jeepX+JEEP_W/2,gnd.jeepY,"#ff6600","#ffffff",16);
               if(sfxEnabled) playTone(180,"square",0.4,0.5,60);
-              if(lives<=0){ state="gameover"; }
             }
           }
         } else if(t === 55) {
@@ -561,10 +557,9 @@ function updateGroundEscape() {
           if(gnd.hitTimer <= 0) {
             if(Math.abs(gnd.edTargetY - gnd.jeepY) < 20 &&
                Math.abs(gnd.edX - (gnd.jeepX + JEEP_W/2)) < 120) {
-              lives--; updateHUD(); gnd.hitTimer=90; gnd.shake=8;
+              playerHit(); updateHUD(); gnd.hitTimer=90; gnd.shake=8;
               explode(gnd.jeepX+JEEP_W/2, gnd.jeepY, "#ffaa00","#ffffff",16);
               if(sfxEnabled) playTone(180,"square",0.4,0.5,60);
-              if(lives<=0){ state="gameover"; }
             }
           }
           if(Math.abs(dest - gnd.edTargetY) < 1.5) {
@@ -760,10 +755,9 @@ function updateGroundEscape() {
           const jeepCY = gnd.jeepY;
           if(Math.abs(b.x - jeepCX) < JEEP_W*0.7 &&
              Math.abs(b.landY - jeepCY) < 18) {
-            lives--; updateHUD(); gnd.hitTimer=90; gnd.shake=8;
+            playerHit(); updateHUD(); gnd.hitTimer=90; gnd.shake=8;
             explode(jeepCX, jeepCY, "#ff6600","#ffffff",16);
             if(sfxEnabled) playTone(180,"square",0.4,0.5,60);
-            if(lives<=0){ state="gameover"; }
           }
         }
         return b.alpha > 0;
@@ -801,10 +795,9 @@ function updateGroundEscape() {
         const rocketLaneY = b.targetY !== undefined ? b.targetY : b.y;
         if(b.x < gnd.jeepX + JEEP_W && b.x > gnd.jeepX - 10 &&
            Math.abs(rocketLaneY - gnd.jeepY) < 18) {
-          lives--; updateHUD(); gnd.hitTimer=90; gnd.shake=6;
+          playerHit(); updateHUD(); gnd.hitTimer=90; gnd.shake=6;
           explode(b.x, b.y, "#ff4400","#ffffff",10);
           if(sfxEnabled) playTone(180,"square",0.3,0.4,50);
-          if(lives<=0){ state="gameover"; }
           return false;
         }
       }
@@ -817,10 +810,9 @@ function updateGroundEscape() {
       const jeepCX = gnd.jeepX + JEEP_W/2;
       const yOverlap = Math.abs(gnd.edTargetY - gnd.jeepY) < 20;
       if(yOverlap && Math.abs(gnd.edX - jeepCX) < 90) {
-        lives--; updateHUD(); gnd.hitTimer = 90; gnd.shake = 10;
+        playerHit(); updateHUD(); gnd.hitTimer = 90; gnd.shake = 10;
         explode(jeepCX, gnd.jeepY, "#ff6600", "#ffffff", 16);
         if(sfxEnabled) playTone(180,"square",0.4,0.5,60);
-        if(lives <= 0) { state = "gameover"; }
       }
     }
 
@@ -973,10 +965,9 @@ function updateGroundEscape() {
         const xHit = Math.abs(sb.x - jeepCX) < sb.r * 1.8 * 0.6 + JEEP_W/2;
         const yHit = Math.abs(gnd.jeepY - glowBase) < 20; // same lane only
         if(xHit && yHit) {
-          lives--; updateHUD(); gnd.hitTimer = 90; gnd.shake = 14;
+          playerHit(); updateHUD(); gnd.hitTimer = 90; gnd.shake = 14;
           explode(jeepCX, gnd.jeepY, "#ff6600", "#ffffff", 20);
           if(sfxEnabled) playTone(180,"square",0.4,0.5,60);
-          if(lives <= 0) { state = "gameover"; }
         }
       }
       // Tick hit flash

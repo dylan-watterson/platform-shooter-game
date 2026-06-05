@@ -131,11 +131,17 @@ function drawHUD() {
   ctx.font = "bold 16px Boogaloo,cursive"; ctx.fillStyle = "#f5c842";
   ctx.textAlign = "left";
   ctx.fillText("SCORE: " + score, 12, 23);
-  ctx.textAlign = "left"; ctx.font = "18px Arial";
+  // Lives — left side (placeholder icons)
+  ctx.textAlign = "left"; ctx.font = "16px Arial";
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = i < lives ? "#f5c842" : "#443300";
+    ctx.fillText(i < lives ? "🚗" : "💀", 12 + i * 26, 24);
+  }
+  // HP hearts — centre
+  ctx.font = "18px Arial";
   const totalHeartW = 5 * 26, heartStartX = GAME_W/2 - totalHeartW/2;
-  for (let i=0;i<5;i++) {
-    ctx.fillStyle = i < lives ? "#ff4444" : "#442222";
-    ctx.fillText(i < lives ? "❤️" : "🖤", heartStartX + i*26, 24);
+  for (let i = 0; i < 5; i++) {
+    ctx.fillText(i < hp ? "❤️" : "🖤", heartStartX + i*26, 24);
   }
   ctx.textAlign = "right"; ctx.font = "bold 16px Boogaloo,cursive"; ctx.fillStyle = "#f5c842";
   ctx.fillText("WAVE: " + waveNum + " / 5", GAME_W - 12, 23);

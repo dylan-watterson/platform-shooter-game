@@ -855,34 +855,77 @@ function drawGroundScene() {
   ctx.save();
   ctx.translate(jx, jy);
 
-  // Wheels
-  const wheelY=JEEP_H-8;
-  [20,JEEP_W-20].forEach(wx=>{
+  // Chunky knobby tyres
+  const wheelY=JEEP_H-6;
+  const wheelR=14;
+  [17,JEEP_W-17].forEach(wx=>{
     const spin=(gnd.speed > 0.1 ? gnd.scrollX/15 : frameCount*0.2)%(Math.PI*2);
-    ctx.fillStyle=hit?"#ff4444":"#222"; ctx.beginPath(); ctx.arc(wx,wheelY,12,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle="#555"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(wx,wheelY,12,0,Math.PI*2); ctx.stroke();
-    // Spokes
-    ctx.strokeStyle="#666"; ctx.lineWidth=2;
-    for(let i=0;i<4;i++){
-      const a=spin+i*Math.PI/2;
-      ctx.beginPath(); ctx.moveTo(wx,wheelY); ctx.lineTo(wx+Math.cos(a)*10,wheelY+Math.sin(a)*10); ctx.stroke();
+    ctx.fillStyle=hit?"#ff4444":"#161616"; ctx.beginPath(); ctx.arc(wx,wheelY,wheelR,0,Math.PI*2); ctx.fill();
+    for(let i=0;i<8;i++){
+      const a=spin+i*Math.PI/4;
+      ctx.save(); ctx.translate(wx,wheelY); ctx.rotate(a);
+      ctx.fillStyle=hit?"#ff6666":"#2a2a2a"; ctx.fillRect(-2.5,wheelR-5,5,5);
+      ctx.restore();
     }
-    ctx.fillStyle="#444"; ctx.beginPath(); ctx.arc(wx,wheelY,4,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#1e1e1e"; ctx.beginPath(); ctx.arc(wx,wheelY,wheelR-5,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle="#999"; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(wx,wheelY,wheelR-5,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle="#777"; ctx.beginPath(); ctx.arc(wx,wheelY,3.5,0,Math.PI*2); ctx.fill();
+    for(let i=0;i<5;i++){
+      const a=spin+i*Math.PI*2/5;
+      ctx.strokeStyle="#aaa"; ctx.lineWidth=1.5;
+      ctx.beginPath();
+      ctx.moveTo(wx+Math.cos(a)*3.5,wheelY+Math.sin(a)*3.5);
+      ctx.lineTo(wx+Math.cos(a)*(wheelR-6),wheelY+Math.sin(a)*(wheelR-6));
+      ctx.stroke();
+    }
+    ctx.fillStyle="#555"; ctx.beginPath(); ctx.arc(wx,wheelY,2,0,Math.PI*2); ctx.fill();
   });
 
-  // Body
-  ctx.fillStyle=hit?"#885533":"#4a6630";
-  ctx.fillRect(0,JEEP_H-26,JEEP_W,20);
-  ctx.fillStyle=hit?"#aa6644":"#3d5528";
-  ctx.fillRect(12,JEEP_H-46,JEEP_W-22,24);
+  // Spare tyre — rounded rectangle on rear
+  const sx=1, sy=JEEP_H-40, sw=10, sh=20, sr=3;
+  ctx.fillStyle="#1a1a1a";
+  ctx.beginPath();
+  ctx.moveTo(sx+sr,sy); ctx.lineTo(sx+sw-sr,sy);
+  ctx.arcTo(sx+sw,sy,sx+sw,sy+sr,sr); ctx.lineTo(sx+sw,sy+sh-sr);
+  ctx.arcTo(sx+sw,sy+sh,sx+sw-sr,sy+sh,sr); ctx.lineTo(sx+sr,sy+sh);
+  ctx.arcTo(sx,sy+sh,sx,sy+sh-sr,sr); ctx.lineTo(sx,sy+sr);
+  ctx.arcTo(sx,sy,sx+sr,sy,sr);
+  ctx.closePath(); ctx.fill();
 
-  // Windshield
-  ctx.fillStyle="rgba(150,220,255,0.3)"; ctx.fillRect(JEEP_W-30,JEEP_H-44,18,18);
-  ctx.strokeStyle="#555"; ctx.lineWidth=1; ctx.strokeRect(JEEP_W-30,JEEP_H-44,18,18);
+  // Rocker rail
+  ctx.fillStyle="#2e3e1a"; ctx.fillRect(22,JEEP_H-16,JEEP_W-44,6);
 
-  // Armour plates
-  ctx.fillStyle="#3a4f22";
-  ctx.fillRect(0,JEEP_H-30,8,20); ctx.fillRect(JEEP_W-8,JEEP_H-30,8,20);
+  // Body — boxy same width top to bottom
+  ctx.fillStyle=hit?"#6a8840":"#4e6a2c"; ctx.fillRect(8,JEEP_H-30,JEEP_W-16,18);
+
+  // Cab — same width as body
+  ctx.fillStyle=hit?"#5a7836":"#445f28"; ctx.fillRect(8,JEEP_H-46,JEEP_W-16,20);
+
+  // Exposed roll bar
+  ctx.strokeStyle="#2a3d18"; ctx.lineWidth=3; ctx.lineJoin="round";
+  ctx.beginPath();
+  ctx.moveTo(16,JEEP_H-28); ctx.lineTo(16,JEEP_H-46);
+  ctx.lineTo(JEEP_W-24,JEEP_H-46); ctx.lineTo(JEEP_W-24,JEEP_H-28);
+  ctx.stroke();
+
+  // Windshield — tall, nearly vertical
+  ctx.fillStyle="rgba(160,220,255,0.35)"; ctx.fillRect(JEEP_W-28,JEEP_H-44,14,18);
+  ctx.strokeStyle="#3a5020"; ctx.lineWidth=1; ctx.strokeRect(JEEP_W-28,JEEP_H-44,14,18);
+
+  // Front face
+  ctx.fillStyle="#344822"; ctx.fillRect(JEEP_W-10,JEEP_H-30,10,16);
+
+  // 7-slot grille
+  ctx.fillStyle="#1e2e10";
+  for(let i=0;i<7;i++) ctx.fillRect(JEEP_W-9,JEEP_H-27+i*2.2,7,1.2);
+
+  // Headlight
+  ctx.fillStyle="#ffe866"; ctx.beginPath(); ctx.arc(JEEP_W-7,JEEP_H-35,4,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle="#bbb"; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(JEEP_W-7,JEEP_H-35,4,0,Math.PI*2); ctx.stroke();
+  ctx.fillStyle="#fffde0"; ctx.beginPath(); ctx.arc(JEEP_W-8.5,JEEP_H-36.5,1.5,0,Math.PI*2); ctx.fill();
+
+  // Hood
+  ctx.fillStyle="#4e6a2c"; ctx.fillRect(JEEP_W-12,JEEP_H-32,6,4);
 
   ctx.restore(); // jeep translate
 

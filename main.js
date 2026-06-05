@@ -58,7 +58,7 @@ function makeEnemy(x, y, type, idx) {
 
 // ─── Game start ───────────────────────────────────────────────
 function startGame() {
-  score=0; lives=5; waveNum=1; enemyDir=-1; enemySpeed=1; enemyVDir=1; bossDyingTimer=0;
+  score=0; lives=3; hp=5; waveNum=1; enemyDir=-1; enemySpeed=1; enemyVDir=1; bossDyingTimer=0;
   player.speed = PLAYER_BASE_SPEED; playerSpeedBoosted = false;
   cannon.active=false; cannon.dead=false; cannon.laser=null; mecha.active=false; mecha.dead=false;
   tunnel.walls=[]; tunnel.wallsSpawned=0; tunnel.playerHitTimer=0;
@@ -113,6 +113,7 @@ function loop(timestamp) {
     return;
   }
 
+  if (state==="death")        { updateDeath(); return; }
   if (state==="tunnelready")  { updateTunnelReady(); return; }
   if (state==="tunnel")       { updateTunnel(); return; }
   if (state==="shipenter")    { updateShipEnter(); return; }
@@ -235,10 +236,10 @@ function update() {
       if (player.invincible <= 0) {
         const pdx = ball.x - (player.x+player.w/2), pdy = ball.y - (player.y+player.h/2);
         if (Math.sqrt(pdx*pdx+pdy*pdy) < (ball.r||28)) {
-          lives--; updateHUD(); player.invincible=90;
+          playerHit(); updateHUD(); player.invincible=90;
           explode(player.x+player.w/2,player.y+player.h/2,"#00ffff","#ffffff",20);
           if(sfxEnabled) playTone(200,"square",0.4,0.5,100);
-          if(lives<=0){state="gameover";} mb.electricBall = null;
+          mb.electricBall = null;
         }
       }
       if (ball.x + (ball.r||28) < 0) mb.electricBall = null;
@@ -307,9 +308,9 @@ function update() {
   if (player.invincible<=0) {
     for (const b of enemyBullets) {
       if (rectsOverlap(b.x-8,b.y-4,16,8,player.x+8,player.y+4,player.w-16,player.h-8)) {
-        lives--; updateHUD(); player.invincible=90;
+        playerHit(); updateHUD(); player.invincible=90;
         explode(player.x+player.w/2,player.y+player.h/2,"#f5c842","#ff4040",20); sfxPlayerHit();
-        if (lives<=0) { state="gameover"; return; } break;
+        break;
       }
     }
   }
@@ -568,7 +569,7 @@ function startDebugTunnelGauntlet() {
 }
 
 function startDebugWave(wave) {
-  score=0; lives=5; waveNum=wave;
+  score=0; lives=3; hp=5; waveNum=wave;
   enemyDir=-1; enemySpeed=1+(wave-1)*0.3; enemyVDir=1;
   bossDyingTimer=0; player.speed=PLAYER_BASE_SPEED; playerSpeedBoosted=false;
   bullets=[]; enemyBullets=[]; particles=[];
@@ -587,7 +588,7 @@ function startDebugWave(wave) {
 }
 
 function startDebugShipBoss() {
-  score=0; lives=5; waveNum=4;
+  score=0; lives=3; hp=5; waveNum=4;
   enemyDir=-1; enemySpeed=1; enemyVDir=1;
   bossDyingTimer=0; player.speed=PLAYER_BASE_SPEED; playerSpeedBoosted=false;
   bullets=[]; enemyBullets=[]; particles=[];
@@ -599,7 +600,7 @@ function startDebugShipBoss() {
 }
 
 function startDebugBoss() {
-  score=0; lives=5; waveNum=5;
+  score=0; lives=3; hp=5; waveNum=5;
   enemyDir=-1; enemySpeed=1; enemyVDir=1;
   bossDyingTimer=0; player.speed=PLAYER_BASE_SPEED; playerSpeedBoosted=false;
   bullets=[]; enemyBullets=[]; particles=[];
@@ -612,10 +613,94 @@ function startDebugBoss() {
 }
 
 function startDebugTunnel() {
-  lives=5; score=0; waveNum=4;
+  lives=3; hp=5; score=0; waveNum=4;
   particles=[]; bullets=[]; enemyBullets=[];
   player.speed = PLAYER_BASE_SPEED; playerSpeedBoosted = false;
   initClouds(); startTunnel();
+}
+
+// ─── Lives / HP ───────────────────────────────────────────────
+function restartCurrentSection() {
+  hp = 5;
+  player.invincible = 120;
+  const s = state;
+  if (s === "ground")                              { startGroundEscape(); }
+  else if (s === "ground2")                        { startGroundEscape2(); }
+  else if (s === "tunnel" || s === "tunnelready")  { startTunnel(); }
+  else if (s === "shipboss" || s === "shipenter")  { startShipBoss(); }
+  else if (s === "wave5intro" || s === "playing" && waveNum === 5) { startWave5Intro(); }
+  else if (s === "playing" || s === "bossdying")   { startDebugWave(waveNum); }
+  else { startGroundEscape(); }
+}
+
+function playerHit() {
+  hp--;
+  if (hp <= 0) {
+    lives--;
+    if (lives <= 0) { state = "gameover"; return; }
+    const isGround = state === "ground" || state === "ground2";
+    deathAnim.x = isGround ? gnd.jeepX + JEEP_W/2 : player.x + player.w/2;
+    deathAnim.y = isGround ? gnd.jeepY - JEEP_H/2  : player.y + player.h/2;
+    deathAnim.timer = 0;
+    deathAnim.nextState = null;
+    state = "death";
+  }
+}
+
+// ─── Death animation ──────────────────────────────────────────
+function updateDeath() {
+  deathAnim.timer++;
+  const t = deathAnim.timer;
+
+  ctx.clearRect(0, 0, GAME_W, GAME_H);
+  drawBG();
+
+  // Keep existing particles alive and draw them
+  particles = particles.filter(p => {
+    p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.life -= p.decay; return p.life > 0;
+  });
+  particles.forEach(drawParticle);
+
+  // Phase 1 — vehicle explosion bursts (t 0–60)
+  if (t < 60 && t % 5 === 0) {
+    const ox = deathAnim.x + (Math.random()-0.5)*90;
+    const oy = deathAnim.y + (Math.random()-0.5)*60;
+    const col = Math.random() > 0.5 ? "#ff4020" : "#ffcc00";
+    explode(ox, oy, col, "#ffffff", 22);
+    if (sfxEnabled && t % 10 === 0) sfxExplode();
+  }
+
+  // Phase 2 — fade to black (t 40–80)
+  if (t >= 40) {
+    const alpha = Math.min((t - 40) / 40, 1);
+    ctx.fillStyle = `rgba(0,0,0,${alpha})`;
+    ctx.fillRect(0, 0, GAME_W, GAME_H);
+  }
+
+  // At peak black — restart the section, capture the new state
+  if (t === 82) {
+    restartCurrentSection();
+    deathAnim.nextState = state;
+    state = "death";
+  }
+
+  // Hold full black briefly (t 80–92)
+  if (t >= 80 && t < 92) {
+    ctx.fillStyle = "rgba(0,0,0,1)";
+    ctx.fillRect(0, 0, GAME_W, GAME_H);
+  }
+
+  // Phase 3 — fade in from black (t 92–132)
+  if (t >= 92 && t < 132) {
+    const alpha = 1 - (t - 92) / 40;
+    ctx.fillStyle = `rgba(0,0,0,${alpha})`;
+    ctx.fillRect(0, 0, GAME_W, GAME_H);
+  }
+
+  // Done — hand off to the restarted section
+  if (t >= 132 && deathAnim.nextState) {
+    state = deathAnim.nextState;
+  }
 }
 
 // ─── Boot ─────────────────────────────────────────────────────
